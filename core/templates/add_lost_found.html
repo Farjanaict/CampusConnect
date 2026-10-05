@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Post Lost & Found Item</title>
+</head>
+<body>
+
+    <h1>Post Lost & Found Item</h1>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <label>Title:</label><br>
+        <input type="text" name="title" required><br><br>
+
+        <label>Description:</label><br>
+        <textarea name="description" required></textarea><br><br>
+
+        <label>Item Type:</label><br>
+        <select name="item_type" required>
+            <option value="Lost">Lost</option>
+            <option value="Found">Found</option>
+        </select><br><br>
+
+        <label>Location:</label><br>
+        <input type="text" name="location" required><br><br>
+
+        <label>Contact:</label><br>
+        <input type="text" name="contact" required><br><br>
+
+        <button type="submit">Post Item</button>
+    </form>
+
+    <br>
+
+    <a href="/lost-found/">Back to Lost & Found</a>
+
+</body>
+</html>
