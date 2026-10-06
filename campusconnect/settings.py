@@ -29,7 +29,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-local-development-key
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['campusconnect-1-xeyj.onrender.com']
+ALLOWED_HOSTS = [
+    'campusconnect-1-xeyj.onrender.com',
+    'campusconnect-elp3.onrender.com',
+    '127.0.0.1',
+    'localhost',
+]
 
 
 # Application definition
