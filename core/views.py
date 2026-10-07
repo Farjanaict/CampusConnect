@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from .models import Event, EventRegistration, LostFound, Complaint
 from django.contrib import messages
+from django.db import IntegrityError
 
 def home(request):
     return render(request, 'home.html')
@@ -10,25 +11,37 @@ def home(request):
 
 def register(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
-        password = request.POST['password']
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '').strip()
 
-        User.objects.create_user(
-            username=username,
-            email=email,
-            password=password
-        )
+        if not username or not password:
+            messages.error(request, 'Username and Password are required!')
+            return render(request, 'register.html')
 
-        return redirect('/login/')
+        try:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password
+            )
+            user.save()
+            messages.success(request, 'Account created successfully! Please login.')
+            return redirect('/login/')
+        except IntegrityError:
+            messages.error(request, 'Username already exists! Please choose another one.')
+            return render(request, 'register.html')
+        except Exception as e:
+            messages.error(request, f'An error occurred: {str(e)}')
+            return render(request, 'register.html')
 
     return render(request, 'register.html')
 
 
 def user_login(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
 
         user = authenticate(
             request,
@@ -38,14 +51,16 @@ def user_login(request):
 
         if user is not None:
             login(request, user)
+            messages.success(request, f'Welcome back, {username}!')
             return redirect('/dashboard/')
+        else:
+            messages.error(request, 'Invalid username or password. Please try again.')
 
     return render(request, 'login.html')
 
 
 def dashboard(request):
     if request.user.is_authenticated:
-        # Fetching latest items for Dashboard
         events = Event.objects.all().order_by('-id')[:3]
         lost_found_items = LostFound.objects.all().order_by('-id')[:3]
         user_complaints = Complaint.objects.filter(student=request.user).order_by('-id')[:3]
@@ -83,17 +98,19 @@ def events(request):
 
 def register_event(request, event_id):
     if request.user.is_authenticated:
-        event = Event.objects.get(id=event_id)
+        try:
+            event = Event.objects.get(id=event_id)
+            registration, created = EventRegistration.objects.get_or_create(
+                student=request.user,
+                event=event
+            )
 
-        registration, created = EventRegistration.objects.get_or_create(
-            student=request.user,
-            event=event
-        )
-
-        if created:
-            messages.success(request, 'Successfully registered for this event!')
-        else:
-            messages.warning(request, 'You are already registered for this event.')
+            if created:
+                messages.success(request, 'Successfully registered for this event!')
+            else:
+                messages.warning(request, 'You are already registered for this event.')
+        except Event.DoesNotExist:
+            messages.error(request, 'Event not found.')
 
         return redirect('/events/')
 
@@ -115,7 +132,6 @@ def my_events(request):
 
 def cancel_event(request, event_id):
     if request.user.is_authenticated and request.method == 'POST':
-
         registration = EventRegistration.objects.filter(
             student=request.user,
             event_id=event_id
@@ -133,18 +149,17 @@ def cancel_event(request, event_id):
 
 
 def lost_found(request):
-    # Fetch all items ordered by newest first
     items = LostFound.objects.all().order_by('-id')
     return render(request, 'lost_found.html', {'items': items})
 
 
 def add_lost_found(request):
     if request.method == 'POST':
-        title = request.POST['title']
-        description = request.POST['description']
-        item_type = request.POST['item_type']
-        location = request.POST['location']
-        contact = request.POST['contact']
+        title = request.POST.get('title', '')
+        description = request.POST.get('description', '')
+        item_type = request.POST.get('item_type', '')
+        location = request.POST.get('location', '')
+        contact = request.POST.get('contact', '')
 
         LostFound.objects.create(
             title=title,
@@ -162,7 +177,6 @@ def add_lost_found(request):
 
 def complaints(request):
     if request.user.is_authenticated:
-        # Show all complaints or user's own complaints
         user_complaints = Complaint.objects.filter(
             student=request.user
         ).order_by('-id')
@@ -177,8 +191,8 @@ def complaints(request):
 def add_complaint(request):
     if request.user.is_authenticated:
         if request.method == 'POST':
-            subject = request.POST['subject']
-            description = request.POST['description']
+            subject = request.POST.get('subject', '')
+            description = request.POST.get('description', '')
 
             Complaint.objects.create(
                 student=request.user,
