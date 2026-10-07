@@ -41,13 +41,29 @@ def user_login(request):
             return redirect('/dashboard/')
 
     return render(request, 'login.html')
+
+
 def dashboard(request):
     if request.user.is_authenticated:
-        return render(request, 'dashboard.html')
+        # Fetching latest items for Dashboard
+        events = Event.objects.all().order_by('-id')[:3]
+        lost_found_items = LostFound.objects.all().order_by('-id')[:3]
+        user_complaints = Complaint.objects.filter(student=request.user).order_by('-id')[:3]
+
+        context = {
+            'events': events,
+            'lost_found_items': lost_found_items,
+            'complaints': user_complaints,
+        }
+        return render(request, 'dashboard.html', context)
 
     return redirect('/login/')
+
+
 def materials(request):
     return render(request, 'materials.html')
+
+
 def networking(request):
     return render(request, 'networking.html')
 
@@ -58,9 +74,13 @@ def web_engineering(request):
 
 def database(request):
     return render(request, 'database.html')
+
+
 def events(request):
-    events = Event.objects.all()
+    events = Event.objects.all().order_by('-id')
     return render(request, 'events.html', {'events': events})
+
+
 def register_event(request, event_id):
     if request.user.is_authenticated:
         event = Event.objects.get(id=event_id)
@@ -79,6 +99,7 @@ def register_event(request, event_id):
 
     return redirect('/login/')
 
+
 def my_events(request):
     if request.user.is_authenticated:
         registrations = EventRegistration.objects.filter(
@@ -90,6 +111,8 @@ def my_events(request):
         })
 
     return redirect('/login/')
+
+
 def cancel_event(request, event_id):
     if request.user.is_authenticated and request.method == 'POST':
 
@@ -107,8 +130,11 @@ def cancel_event(request, event_id):
         return redirect('/my-events/')
 
     return redirect('/login/')
+
+
 def lost_found(request):
-    items = LostFound.objects.all().order_by('-created_at')
+    # Fetch all items ordered by newest first
+    items = LostFound.objects.all().order_by('-id')
     return render(request, 'lost_found.html', {'items': items})
 
 
@@ -132,11 +158,14 @@ def add_lost_found(request):
         return redirect('/lost-found/')
 
     return render(request, 'add_lost_found.html')
+
+
 def complaints(request):
     if request.user.is_authenticated:
+        # Show all complaints or user's own complaints
         user_complaints = Complaint.objects.filter(
             student=request.user
-        ).order_by('-created_at')
+        ).order_by('-id')
 
         return render(request, 'complaints.html', {
             'complaints': user_complaints
@@ -163,6 +192,8 @@ def add_complaint(request):
         return render(request, 'add_complaint.html')
 
     return redirect('/login/')
+
+
 def user_logout(request):
     logout(request)
     return redirect('/login/')
