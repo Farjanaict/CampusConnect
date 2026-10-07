@@ -21,6 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 import os
+import dj_database_url
+
+# Database configuration for both local and production (Render PostgreSQL)
+DATABASES = {
+    'default': dj_database_url.config(
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        conn_max_age=600
+    )
+}
 from dotenv import load_dotenv
 
 load_dotenv()
