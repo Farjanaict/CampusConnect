@@ -23,17 +23,25 @@ class Command(BaseCommand):
                 "email": email or "",
                 "is_staff": True,
                 "is_superuser": True,
+                "is_active": True,
             },
         )
 
-        if not created:
-            user.email = email or user.email
-            user.is_staff = True
-            user.is_superuser = True
+        # Force update all fields and permissions
+        user.email = email or user.email
+        user.is_staff = True
+        user.is_superuser = True
+        user.is_active = True
 
+        # Force set password
         user.set_password(password)
         user.save()
 
-        self.stdout.write(
-            self.style.SUCCESS(f"Admin user '{username}' is ready.")
-        )
+        if created:
+            self.stdout.write(
+                self.style.SUCCESS(f"Created new admin user '{username}'.")
+            )
+        else:
+            self.stdout.write(
+                self.style.SUCCESS(f"Updated password and permissions for admin user '{username}'.")
+            )
